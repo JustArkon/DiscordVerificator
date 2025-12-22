@@ -7,12 +7,12 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.justempire.discordverificator.commands.LinkCommand;
 import net.justempire.discordverificator.commands.ReloadCommand;
 import net.justempire.discordverificator.commands.UnlinkCommand;
+import net.justempire.discordverificator.configuration.Configuration;
 import net.justempire.discordverificator.discord.DiscordBot;
 import net.justempire.discordverificator.listeners.JoinListener;
 import net.justempire.discordverificator.services.ConfirmationCodeService;
 import net.justempire.discordverificator.services.UserManager;
 import net.justempire.discordverificator.utils.MessageColorizer;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.security.auth.login.LoginException;
@@ -25,6 +25,8 @@ public class DiscordVerificatorPlugin extends JavaPlugin {
     private UserManager userManager;
     private ConfirmationCodeService confirmationCodeService;
     private DiscordBot discordBot;
+
+    private static Configuration config;
 
     private JDA currentJDA;
     private static Map<String, String> messages = new HashMap<>();
@@ -41,11 +43,9 @@ public class DiscordVerificatorPlugin extends JavaPlugin {
         userManager = new UserManager(String.format("%s/users.json", getDataFolder()));
         confirmationCodeService = new ConfirmationCodeService();
 
+        config = new Configuration(this);
         // Setting up the bot
         setupBot();
-
-        // Setting up the messages
-        setupMessages();
 
         // Setting up listeners
         getServer().getPluginManager().registerEvents(new JoinListener(this, userManager, confirmationCodeService), this);
@@ -101,38 +101,12 @@ public class DiscordVerificatorPlugin extends JavaPlugin {
         // Reloading the config
         reloadConfig();
 
-        // Reloading the messages from config
-        setupMessages();
-
         // Reloading JSON file where users are stored
         userManager.reload();
 
         // Starting the bot
         setupBot();
     }
-
-    private void setupMessages() {
-        messages = new HashMap<>();
-
-        // Getting the messages from the config
-        ConfigurationSection configSection = getConfig().getConfigurationSection("messages");
-        if (configSection != null) {
-            // Adding these messages to dictionary
-            Map<String, Object> messages = configSection.getValues(true);
-            for (Map.Entry<String, Object> pair : messages.entrySet()) {
-                DiscordVerificatorPlugin.messages.put(pair.getKey(), pair.getValue().toString());
-            }
-        }
-
-        saveDefaultConfig();
-    }
-
-    // Returns a message from the config by key
-    public static String getMessage(String key) {
-        if (messages == null) return String.format("Message %s wasn't found (messages list is null)", key);
-        if (messages.get(key) == null) return String.format("Message %s wasn't found", key);
-
-        return MessageColorizer.colorize(messages.get(key));
-    }
+    public static Configuration getConfigWrapper() { return config; }
 }
 
