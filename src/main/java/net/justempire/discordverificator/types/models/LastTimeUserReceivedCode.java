@@ -1,4 +1,4 @@
-package net.justempire.discordverificator.models;
+package net.justempire.discordverificator.types.models;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;

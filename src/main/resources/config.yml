@@ -5,6 +5,20 @@
 # 5. Give your players access to send a command to the bot (e.g., invite it to your Discord server)
 token: "DISCORD_BOT_TOKEN"
 
+storage:
+  # "json"
+  type: "json"
+
+  # Storage file name (the extension is generated automatically depending on the selected storage type)
+  fileName: "users"
+
+  # Additional settings for hosted relational database
+  host: "localhost"
+  port: 3306
+  database: "default"
+  username: "user"
+  password: "password"
+
 messages:
   "not-enough-permissions": "&cNot enough permissions!"
   "invalid-link-format": "&cInvalid format! Please use: /link <player> <discordId>"

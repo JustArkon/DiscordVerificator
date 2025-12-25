@@ -1,4 +1,4 @@
-package net.justempire.discordverificator.models;
+package net.justempire.discordverificator.types.models;
 
 // Used to store username and IP
 public class UsernameAndIp {

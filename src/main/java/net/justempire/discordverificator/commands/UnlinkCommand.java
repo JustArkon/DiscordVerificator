@@ -2,19 +2,19 @@ package net.justempire.discordverificator.commands;
 
 import net.justempire.discordverificator.DiscordVerificatorPlugin;
 import net.justempire.discordverificator.configuration.Configuration;
-import net.justempire.discordverificator.services.UserManager;
 import net.justempire.discordverificator.exceptions.NotFoundException;
+import net.justempire.discordverificator.repository.abstraction.UserRepository;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 public class UnlinkCommand implements CommandExecutor {
-    private final UserManager userManager;
+    private final UserRepository userRepository;
     private final Configuration config;
 
-    public UnlinkCommand(UserManager userManager) {
-        this.userManager = userManager;
+    public UnlinkCommand(UserRepository userRepository) {
+        this.userRepository = userRepository;
         config = DiscordVerificatorPlugin.getConfigWrapper();
     }
 
@@ -31,7 +31,7 @@ public class UnlinkCommand implements CommandExecutor {
         }
 
         try {
-            userManager.unlinkUser(arguments[0]);
+            userRepository.unlinkUser(arguments[0]);
             commandSender.sendMessage(config.getMessage("successfully-unlinked"));
             return true;
         }

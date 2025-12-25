@@ -2,19 +2,19 @@ package net.justempire.discordverificator.commands;
 
 import net.justempire.discordverificator.DiscordVerificatorPlugin;
 import net.justempire.discordverificator.configuration.Configuration;
-import net.justempire.discordverificator.services.UserManager;
 import net.justempire.discordverificator.exceptions.MinecraftUsernameAlreadyLinkedException;
+import net.justempire.discordverificator.repository.abstraction.UserRepository;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 public class LinkCommand implements CommandExecutor {
-    private final UserManager userManager;
+    private final UserRepository userRepository;
     private final Configuration config;
 
-    public LinkCommand(UserManager userManager) {
-        this.userManager = userManager;
+    public LinkCommand(UserRepository userRepository) {
+        this.userRepository = userRepository;
         config = DiscordVerificatorPlugin.getConfigWrapper();
     }
 
@@ -39,7 +39,7 @@ public class LinkCommand implements CommandExecutor {
         }
 
         try {
-            userManager.linkUser(discordUserId, playerName);
+            userRepository.linkUser(discordUserId, playerName);
             commandSender.sendMessage(config.getMessage("successfully-linked"));
         }
         catch (MinecraftUsernameAlreadyLinkedException e) {

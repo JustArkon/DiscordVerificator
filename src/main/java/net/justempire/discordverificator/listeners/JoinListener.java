@@ -3,9 +3,9 @@ package net.justempire.discordverificator.listeners;
 import net.justempire.discordverificator.DiscordVerificatorPlugin;
 import net.justempire.discordverificator.configuration.Configuration;
 import net.justempire.discordverificator.exceptions.NoCodesFoundException;
-import net.justempire.discordverificator.models.User;
+import net.justempire.discordverificator.repository.abstraction.UserRepository;
+import net.justempire.discordverificator.types.models.User;
 import net.justempire.discordverificator.services.ConfirmationCodeService;
-import net.justempire.discordverificator.services.UserManager;
 import net.justempire.discordverificator.exceptions.UserNotFoundException;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,13 +18,13 @@ import java.time.ZoneId;
 import java.util.Date;
 
 public class JoinListener implements Listener {
-    private final UserManager userManager;
+    private final UserRepository userRepository;
     private final DiscordVerificatorPlugin plugin;
     private final ConfirmationCodeService confirmationCodeService;
     private final Configuration config;
 
-    public JoinListener(DiscordVerificatorPlugin plugin, UserManager userManager, ConfirmationCodeService confirmationCodeService) {
-        this.userManager = userManager;
+    public JoinListener(DiscordVerificatorPlugin plugin, UserRepository userRepository, ConfirmationCodeService confirmationCodeService) {
+        this.userRepository = userRepository;
         this.plugin = plugin;
         this.confirmationCodeService = confirmationCodeService;
         config = DiscordVerificatorPlugin.getConfigWrapper();
@@ -37,7 +37,7 @@ public class JoinListener implements Listener {
         String ipAddress = event.getAddress().getHostAddress();
 
         // Trying to get the user by his linked in-game username
-        try { user = userManager.getByMinecraftUsername(player.getName());}
+        try { user = userRepository.getByMinecraftUsername(player.getName());}
         catch (UserNotFoundException e) {
             // If user wasn't found
             preventJoin(event, config.getMessage("account-not-linked"));
@@ -63,7 +63,7 @@ public class JoinListener implements Listener {
                 }
             }
             catch (NoCodesFoundException e) {
-                userManager.updateLastTimeUserReceivedCode(user.getDiscordId(), ipAddress);
+                userRepository.updateLastTimeUserReceivedCode(user.getDiscordId(), ipAddress);
             }
         }
 
@@ -71,7 +71,7 @@ public class JoinListener implements Listener {
         if (!user.getCurrentAllowedIp().equals(ipAddress)) {
             String code = confirmationCodeService.generateVerificationCode(player.getName(), ipAddress);
 
-            userManager.updateLastTimeUserReceivedCode(user.getDiscordId(), ipAddress);
+            userRepository.updateLastTimeUserReceivedCode(user.getDiscordId(), ipAddress);
 
             event.setResult(PlayerLoginEvent.Result.KICK_OTHER);
             preventJoin(event, String.format(config.getMessage("confirm-with-command"), code));

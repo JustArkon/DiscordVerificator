@@ -10,87 +10,94 @@ import net.justempire.discordverificator.commands.UnlinkCommand;
 import net.justempire.discordverificator.configuration.Configuration;
 import net.justempire.discordverificator.discord.DiscordBot;
 import net.justempire.discordverificator.listeners.JoinListener;
+import net.justempire.discordverificator.repository.UserRepositoryWrapper;
 import net.justempire.discordverificator.services.ConfirmationCodeService;
-import net.justempire.discordverificator.services.UserManager;
 import net.justempire.discordverificator.utils.MessageColorizer;
+import com.tchristofferson.configupdater.ConfigUpdater;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.security.auth.login.LoginException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DiscordVerificatorPlugin extends JavaPlugin {
     private Logger logger;
-    private UserManager userManager;
+    private UserRepositoryWrapper userRepository;
     private ConfirmationCodeService confirmationCodeService;
     private DiscordBot discordBot;
 
     private static Configuration config;
 
     private JDA currentJDA;
-    private static Map<String, String> messages = new HashMap<>();
 
     @Override
     public void onEnable() {
-        // Creating a config if it doesn't exist
-        saveDefaultConfig();
-
         // Setting up the logger
-        logger = this.getLogger();
+        logger = getLogger();
 
         // Setting up services
-        userManager = new UserManager(String.format("%s/users.json", getDataFolder()));
+        saveDefaultConfig();
+        config = new Configuration(this);
+        userRepository = new UserRepositoryWrapper(config.getRepositoryConfiguration());
         confirmationCodeService = new ConfirmationCodeService();
 
-        config = new Configuration(this);
         // Setting up the bot
         setupBot();
 
-        // Setting up listeners
-        getServer().getPluginManager().registerEvents(new JoinListener(this, userManager, confirmationCodeService), this);
+        // Starting the plugin
+        try { start(); }
+        catch (RuntimeException e) { getLogger().log(Level.SEVERE, e.getMessage()); }
 
-        // Setting up commands
-        LinkCommand linkCommand = new LinkCommand(userManager);
-        getCommand("link").setExecutor(linkCommand);
+        // Registering listeners
+        getServer().getPluginManager().registerEvents(new JoinListener(this, userRepository, confirmationCodeService), this);
 
-        UnlinkCommand unlinkCommand = new UnlinkCommand(userManager);
-        getCommand("unlink").setExecutor(unlinkCommand);
-
-        ReloadCommand reloadCommand = new ReloadCommand(this);
-        getCommand("dvreload").setExecutor(reloadCommand);
+        // Registering commands
+        Objects.requireNonNull(getCommand("link")).setExecutor(new LinkCommand(userRepository));
+        Objects.requireNonNull(getCommand("unlink")).setExecutor(new UnlinkCommand(userRepository));
+        Objects.requireNonNull(getCommand("dvreload")).setExecutor(new ReloadCommand(this));
 
         logger.info("Enabled successfully!");
     }
 
     @Override
     public void onDisable() {
-        userManager.onShutDown();
+        userRepository.onShutDown();
         if (currentJDA != null) currentJDA.shutdown();
         logger.info("Shutting down!");
     }
 
-    public DiscordBot getDiscordBot() {
-        return discordBot;
+    @SuppressWarnings("CallToPrintStackTrace")
+    public void start() {
+        // Saving the default config
+        saveDefaultConfig();
+
+        // Updating the config with missing key-pairs (and removing redundant ones if present)
+        File configFile = new File(getDataFolder(), "config.yml");
+        try { ConfigUpdater.update(this, "config.yml", configFile, new ArrayList<>()); }
+        catch (IOException e) { e.printStackTrace(); }
     }
 
-    // Setting up Discord bot
+    public DiscordBot getDiscordBot(){
+        return discordBot;
+    }
     private void setupBot() {
         String token = getConfig().getString("token");
-        DiscordBot bot = new DiscordBot(logger, userManager, confirmationCodeService);
+        this.discordBot = new DiscordBot(logger, userRepository, confirmationCodeService);
 
         try {
             this.currentJDA = JDABuilder.createLight(token)
-                    .addEventListeners(bot)
+                    .addEventListeners(discordBot)
                     .setAutoReconnect(true)
                     .setChunkingFilter(ChunkingFilter.ALL)
                     .setStatus(OnlineStatus.ONLINE)
                     .build();
+        } catch (LoginException e) {
+            logger.severe(MessageColorizer.colorize("Wrong discord bot token provided!"));
         }
-        catch (LoginException e)
-        { logger.severe(MessageColorizer.colorize("Wrong discord bot token provided!")); }
-
-        this.discordBot = bot;
     }
 
     public void reload() {
@@ -102,7 +109,7 @@ public class DiscordVerificatorPlugin extends JavaPlugin {
         reloadConfig();
 
         // Reloading JSON file where users are stored
-        userManager.reload();
+        userRepository.updateImplementation(config.getRepositoryConfiguration());
 
         // Starting the bot
         setupBot();

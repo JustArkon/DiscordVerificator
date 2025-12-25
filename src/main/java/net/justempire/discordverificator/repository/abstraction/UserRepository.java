@@ -1,31 +1,19 @@
-package net.justempire.discordverificator.services;
+package net.justempire.discordverificator.repository.abstraction;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import net.justempire.discordverificator.exceptions.MinecraftUsernameAlreadyLinkedException;
 import net.justempire.discordverificator.exceptions.NotFoundException;
 import net.justempire.discordverificator.exceptions.UserNotFoundException;
-import net.justempire.discordverificator.models.User;
+import net.justempire.discordverificator.types.models.User;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-// Performs actions on users and loads/saves from/to JSON
-public class UserManager {
-    private List<User> userList = new ArrayList<>();
-    private String pathToJson;
+public abstract class UserRepository {
+    protected List<User> userList = new ArrayList<>();
 
-    public UserManager(String pathToJson) {
-        setUp(pathToJson);
-    }
-
-    private void addUser(User userToAdd) {
+    protected void addUser(User userToAdd) {
         userList.add(userToAdd);
         saveUsers();
     }
@@ -99,44 +87,11 @@ public class UserManager {
         throw new NotFoundException();
     }
 
-    private void loadUsers() throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, true);
-        File source = new File(pathToJson);
+    protected abstract void loadUsers() throws IOException;
 
-        try { userList = objectMapper.readValue(source, new TypeReference<>() {}); }
-        catch (FileNotFoundException e) {
-            // Create JSON file if it didn't exist
-            if (source.createNewFile()) loadUsers();
-        }
-    }
+    protected abstract void saveUsers();
 
-    private void saveUsers() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, true);
-        try { objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(pathToJson), userList); }
-        catch (IOException e) { throw new RuntimeException(e); }
-    }
-
-    private void setUp(String pathToJson) {
-        try {
-            this.pathToJson = pathToJson;
-
-            // Trying to load users from JSON
-            loadUsers();
-        }
-        catch (MismatchedInputException e) {
-            userList = new ArrayList<>();
-            saveUsers();
-            try { loadUsers(); }
-            catch (IOException ex) { throw new RuntimeException(); }
-        }
-        catch (IOException e) { throw new RuntimeException(e); }
-    }
-
-    public void reload() {
-        setUp(pathToJson);
-    }
+    protected abstract void setUp();
 
     public void onShutDown() {
         saveUsers();

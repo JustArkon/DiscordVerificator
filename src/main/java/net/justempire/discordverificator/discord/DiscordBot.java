@@ -14,24 +14,24 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.justempire.discordverificator.DiscordVerificatorPlugin;
 import net.justempire.discordverificator.configuration.Configuration;
 import net.justempire.discordverificator.exceptions.InvalidCodeException;
-import net.justempire.discordverificator.models.UsernameAndIp;
+import net.justempire.discordverificator.repository.abstraction.UserRepository;
+import net.justempire.discordverificator.types.models.UsernameAndIp;
 import net.justempire.discordverificator.services.ConfirmationCodeService;
-import net.justempire.discordverificator.services.UserManager;
 import net.justempire.discordverificator.exceptions.UserNotFoundException;
 import org.jetbrains.annotations.NotNull;
 import java.util.logging.Logger;
 
 public class DiscordBot extends ListenerAdapter {
     private final Logger logger;
-    private final UserManager userManager;
+    private final UserRepository userRepository;
     private final ConfirmationCodeService confirmationCodeService;
     private final Configuration config;
 
     private boolean botEnabled = false;
 
-    public DiscordBot(Logger logger, UserManager repository, ConfirmationCodeService confirmationCodeService) {
+    public DiscordBot(Logger logger, UserRepository repository, ConfirmationCodeService confirmationCodeService) {
         this.logger = logger;
-        this.userManager = repository;
+        this.userRepository = repository;
         this.confirmationCodeService = confirmationCodeService;
         config = DiscordVerificatorPlugin.getConfigWrapper();
     }
@@ -94,7 +94,7 @@ public class DiscordBot extends ListenerAdapter {
 
         try {
             // Return if user tries to confirm someone else's code
-            if (!userManager.getByMinecraftUsername(codeData.getUsername()).getDiscordId().equals(discordId)) {
+            if (!userRepository.getByMinecraftUsername(codeData.getUsername()).getDiscordId().equals(discordId)) {
                 MessageEmbed embed = generateEmbed(config.getMessage("error-occurred"), config.getMessage("its-not-your-account"), 0xF63B2D);
                 event.replyEmbeds(embed).setEphemeral(true).complete();
                 return;
@@ -126,6 +126,6 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     private void confirmIp(String discordId, String ip) throws UserNotFoundException {
-        userManager.updateIp(discordId, ip);
+        userRepository.updateIp(discordId, ip);
     }
 }

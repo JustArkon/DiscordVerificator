@@ -1,7 +1,7 @@
 package net.justempire.discordverificator.services;
 
 import net.justempire.discordverificator.exceptions.InvalidCodeException;
-import net.justempire.discordverificator.models.UsernameAndIp;
+import net.justempire.discordverificator.types.models.UsernameAndIp;
 import net.justempire.discordverificator.utils.VerificationCodeGenerator;
 
 import java.util.HashMap;
